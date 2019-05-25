@@ -48,6 +48,22 @@ BEGIN
   dbms_output.put_line(x_emp.fname || ' ' || x_emp.lname || ' salary is $' || x_emp.salary);
 END;
 
+
+--Handling string literals
+DECLARE 
+  nValue NUMBER(10) := &enter_value;
+  vMessage VARCHAR(30);
+
+BEGIN
+  IF nValue > 60000 THEN
+    vMessage := '!The value isn''t valid.!';
+    dbms_output.put_line(vMessage);
+  END IF;
+END;
+
+
+
+
 --FOR LOOPS
 BEGIN
   FOR I IN 1..100 LOOP
@@ -78,4 +94,42 @@ BEGIN
   END LOOP;
 END;
 
+
+--FOR LOOP CURSOR (NO NEED OF FETCH)
+BEGIN
+  FOR Employees IN
+    (SELECT *
+     FROM employee) LOOP
+     dbms_output.put_line('Employee: ' || Employees.Lname || ' earns $' || Employees.salary);
+  END LOOP;
+END;
+
+--CURSOR
+
+DECLARE
+  --WE DECLARE THE CURSOR
+  CURSOR Employees IS
+    SELECT *
+    FROM employee;
+    
+    --Declare the row type associated to the cursor
+    EmpRecord employee%ROWTYPE;
+    --First comes begin, then opening the cursor, then FETCH, which is a statement that advances the cursor pointer to the next record
+    --After each FETCH statement, the %FOUND and %NOTFOUND attributes must be tested.
+    --IF the fetch statement results in a new row, execute any desired processing.
+    --When completed, the cursor must be closed.
+  BEGIN
+    OPEN Employees;
+    
+    LOOP
+      FETCH Employees INTO EmpRecord;
+      EXIT WHEN Employees%NOTFOUND;
+      
+      --Display the record detail
+      
+      dbms_output.put_line('Employees ' || EmpRecord.LName || ' earns ' || EmpRecord.Salary);
+      
+    END LOOP;
+    CLOSE Employees;
+END;
 

@@ -3,3 +3,17 @@
 
 %ROWTYPE: It's similar to the %type, but instead of one particular field, it references an entire row. The good thing
 	is it's that if you have a table with a lot of different fields with different types, you could use this %ROWTYPE.
+
+CURSORS:
+  --Firstly, we declare the cursor.
+ 
+  --Secondly, we declare the row type associated to the cursor
+ 
+  --Then comes the BEGIN of our block, then we OPEN the cursor andthen FETCH, which is a statement that advances
+ the cursor pointer to the next record
+
+  --After each FETCH statement, the %FOUND and %NOTFOUND attributes must be tested.
+
+  --IF the fetch statement results in a new row, execute any desired processing.
+
+  --When completed, the cursor must be closed.

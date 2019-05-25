@@ -1,0 +1,5 @@
+%TYPE: It determines the type of data automatically. It's a means of declaring a variable and 
+	assigning whatever the type of the table has. It'll hold whatever happens to be the type of the field.
+
+%ROWTYPE: It's similar to the %type, but instead of one particular field, it references an entire row. The good thing
+	is it's that if you have a table with a lot of different fields with different types, you could use this %ROWTYPE.

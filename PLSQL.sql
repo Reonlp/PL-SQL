@@ -61,8 +61,36 @@ BEGIN
   END IF;
 END;
 
+--IF THEN ELSE structure
+DECLARE
+  birth_month  CHAR(3) := '&enter_birth_month';
+  message      VARCHAR(25);
+BEGIN 
+  IF birth_month = 'JAN' THEN
+    message:= 'Start of the year';
+  ELSIF birth_month = 'FEB' THEN
+    message:= 'Short month';
+  ELSE
+    message:= 'No comment';
+  END IF;
 
+  DBMS_OUTPUT.PUT_LINE(message);
+END;
 
+--USING THE CASE STATEMENT
+DECLARE
+  birth_month  CHAR(3) := '&enter_birth_month';
+  message      VARCHAR(25);
+BEGIN 
+  CASE birth_month
+    WHEN 'JAN' THEN message := 'Start of the year';
+    WHEN 'FEB' THEN message := 'Short month';
+    WHEN 'MAR' THEN message := 'Spring has sprung';
+    WHEN 'APR' THEN message := 'Watch for showers';
+    ELSE message := 'No comment';
+  END CASE;
+  DBMS_OUTPUT.PUT_LINE(message);
+END;
 
 --FOR LOOPS
 BEGIN
@@ -104,20 +132,61 @@ BEGIN
   END LOOP;
 END;
 
---CURSOR
+--NESTED LOOP
+CREATE TABLE "TRANSACTIONS" 
+  ("STOCK_ID"             NUMBER(*,0),
+   "TIME_ID"              NUMBER(*,0),
+   "BROKERAGE_ID"         NUMBER(*,0),
+   "BUY_SELL_INDICATOR"   CHAR(1 BYTE),
+   "NUMBER_SHARES"        NUMBER(*, 0),
+   "PRICE"                FLOAT(4) DEFAULT(0)
+  )
+
+DECLARE
+  --Declare variables
+  brokerage_id_limit  transactions.brokerage_id%TYPE := 10;
+  stock_id_limit      TRANSACTIONS.STOCK_ID%TYPE := 10;
+  time_id             TRANSACTIONS.TIME_ID%TYPE := 45;
+
+BEGIN
+
+  --We begin the outer loop and create a similar transaction for every broker
+    FOR x IN 1..brokerage_id_limit LOOP
+  
+      --We begin the nested loop. Every brokerage will either buy or sell every stock.
+      FOR i IN 1..stock_id_limit LOOP
+      
+        --Test for every even value of 1
+        IF mod(i, 2) = 0 THEN
+        INSERT INTO transactions (STOCK_ID, TIME_ID, BROKERAGE_ID, BUY_SELL_INDICATOR, NUMBER_SHARES, PRICE)
+          VALUES (i, time_id, x, 'S', 100 + x + i, 10 + x + 1);
+        
+        ELSE
+          INSERT INTO transactions (STOCK_ID, TIME_ID, BROKERAGE_ID, BUY_SELL_INDICATOR, NUMBER_SHARES, PRICE)
+            VALUES(i, time_id, x, 'B', 200 + x + i, 20 + x + 1);
+        END IF;
+        
+        --Ending the nested loop
+      END LOOP;
+
+  --Ending the nested loop
+  END LOOP;
+
+END;
+
+SELECT * FROM TRANSACTIONS;
+  
+  
+
+--CURSORS
 
 DECLARE
   --WE DECLARE THE CURSOR
   CURSOR Employees IS
     SELECT *
     FROM employee;
-    
-    --Declare the row type associated to the cursor
+
     EmpRecord employee%ROWTYPE;
-    --First comes begin, then opening the cursor, then FETCH, which is a statement that advances the cursor pointer to the next record
-    --After each FETCH statement, the %FOUND and %NOTFOUND attributes must be tested.
-    --IF the fetch statement results in a new row, execute any desired processing.
-    --When completed, the cursor must be closed.
   BEGIN
     OPEN Employees;
     
@@ -130,6 +199,130 @@ DECLARE
       dbms_output.put_line('Employees ' || EmpRecord.LName || ' earns ' || EmpRecord.Salary);
       
     END LOOP;
+    DBMS_OUTPUT.PUT_LINE('ROWS: ' || Employees%ROWCOUNT);
     CLOSE Employees;
 END;
+
+
+DECLARE
+
+  CURSOR Employees is
+    SELECT * 
+    FROM employee
+    ORDER BY salary DESC;
+    
+    EmpRecords employee%ROWTYPE;
+    
+BEGIN
+  IF NOT (Employees%ISOPEN) THEN
+    OPEN Employees;
+  END IF;
+  
+  LOOP
+    FETCH Employees INTO EmpRecords;
+    EXIT WHEN Employees%NOTFOUND;
+  
+  dbms_output.put_line('Employees number ' || Employees%ROWCOUNT || ' ' || EmpRecords.LName || ' earns ' || EmpRecords.Salary);
+  
+  END LOOP;
+  
+  IF Employees%ISOPEN THEN
+    CLOSE Employees;
+  END IF;
+END;
+
+--UPDATE CURSOR
+DECLARE
+  CURSOR Employees IS
+    SELECT * 
+    FROM employee
+  FOR UPDATE OF salary;
+  
+  EmpRecord         employee%ROWTYPE;
+  PayCut            employee.salary%TYPE := 0;
+  ReductionTotal    PayCut%TYPE := 0;
+  
+  DependentCount    NUMBER(10);
+  HasDependents     BOOLEAN := FALSE;
+  
+  HoursSum          works_on.hours%TYPE;
+  WorksHard         BOOLEAN := FALSE;
+  
+  DayOfMonth        INTEGER;
+  TooLateInMonth    EXCEPTION;
+
+BEGIN
+  SELECT TO_CHAR(SYSDATE, 'DD')
+  INTO DayOfMonth
+  FROM DUAL;
+  
+  IF DayOfMonth > 28 THEN
+    Raise TooLateInMonth;
+  END IF;
+  
+  IF NOT (Employees%ISOPEN) THEN
+    OPEN Employees;
+  END IF;
+  
+  LOOP
+    FETCH Employees INTO EmpRecord;
+    EXIT WHEN Employees%NOTFOUND;
+    
+    PayCut := EmpRecord.salary * .10;
+    
+    SELECT COUNT(*)
+    INTO DependentCount
+    FROM dependent
+    WHERE essn = EmpRecord.ssn;
+    
+    HasDependents := (DependentCount > 0);
+    
+    SELECT SUM(hours)
+    INTO HoursSum
+    FROM works_on
+    WHERE essn = EmpRecord.ssn;
+    
+    WorksHard := (HoursSum > 40);
+    
+    CASE
+      WHEN HasDependents THEN PayCut := PayCut - 100;
+      WHEN WorksHard THEN PayCut := PayCut - 50;
+      ELSE NULL;
+    END CASE;
+    
+    UPDATE employee
+    SET salary = salary - PayCut
+    WHERE CURRENT OF Employees;
+    
+    dbms_output.put_line('Salary for ' || EmpRecord.LName || ' reduced by $ ' || PayCut);
+    
+    ReductionTotal := ReductionTotal + PayCut;
+    HasDependents := False;
+    WorksHard := False;
+    
+    END LOOP;
+    
+    COMMIT;
+    
+    IF Employees%ISOPEN THEN
+    CLOSE Employees;
+    END IF;
+    
+    dbms_output.put_line('Total salary reduction: $' || ReductionTotal);
+    
+    EXCEPTION
+      WHEN TooLateInMonth  THEN
+       dbms_output.put_line('No salary changes permitted after the 25th');
+END;
+  
+
+
+--EXCEPTIONS
+
+
+
+
+
+
+
 

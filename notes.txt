@@ -4,6 +4,26 @@
 %ROWTYPE: It's similar to the %type, but instead of one particular field, it references an entire row. The good thing
 	is it's that if you have a table with a lot of different fields with different types, you could use this %ROWTYPE.
 
+
+-IMPLICIT CURSOR:
+	A sql cursor is a pointer that points to the records sql is working with.
+	When a select into affects more than one row, it creates this pointer, that is a cursor.
+	-SQL cursor object details:
+		-We can access attributes within this cursor to determine the action results.
+		-The cursor and attributes are available regardless of a successful or failed DML operation.
+
+-IMPLICIT CURSOR ATTRIBUTES:
+	-SQL%FOUND: Determines whether the DML statement affected any rows.
+	-SQL%NOTFOUND: Logical opposite of the SQL%FOUND.
+	-SQL%ROWCOUNT: Equals the number of rows affected by the DML statement.
+	-SQL%ISOPEN: Indicates whether or not the cursor is currently open.
+
+	When you run a SELECT INTO statement it is expecting one and only one row. If it tries to put 2 rows in there, there will be a problem. Same when there is 
+	no rows. If the row count equals 0, so no rows were returned, it is going to return 0 and the NO_DATA_FOUND exception.
+	
+	It will also equal one when the statement returned too many rows and the TOO_MANY_ROWS exception was rasied.
+
+
 CURSORS:
   --Firstly, we declare the cursor.
  
@@ -17,3 +37,32 @@ CURSORS:
   --IF the fetch statement results in a new row, execute any desired processing.
 
   --When completed, the cursor must be closed.
+
+	*CURSOR ATTRIBUTE VALUES	
+		-%FOUND: indicates wherer or not the FETCH statement received data.
+		-%ROWCOUNT: INdicates which row the FETCH statement received. The row count points to the row where is pointing.
+		-%ISOPEN.		
+
+EXCEPTIONS
+	-Program processing: Errors that occur during the execution of the program.
+	-Internal oracle: Errors which arise from the Oracle environment.
+	-User declared: Errors anticipated which you wish to trap and intentionally transfer execution
+	from BEGIN clause to EXCEPTION clause.
+
+
+ *COMMON EXCEPTIONS:
+	-NO_DATA_FOUND
+	-TOO_MANY_ROWS
+	-CURSOR_ALREADY_OPEN
+	-INVALID_CURSOR
+
+	-CASE_NOT_FOUND
+	-INVALID_NUMBER
+	-VALUE_ERROR
+	-ZERO_DIVIDE
+	-LOGIN_DENIED
+	-NOT_LOGGED_ON
+	-PROGRAM_ERROR
+	-STORAGE_ERROR
+	-TIMEOUT_ON_RESOURCE
+

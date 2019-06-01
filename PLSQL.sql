@@ -314,14 +314,97 @@ BEGIN
       WHEN TooLateInMonth  THEN
        dbms_output.put_line('No salary changes permitted after the 25th');
 END;
+
+BEGIN
+  FOR Employees IN
+    (SELECT *
+    FROM employee) LOOP
+    dbms_output.put_line('Employee: ' || Employees.Lname || ' earns $ ' || Employees.salary);
+  END LOOP;
+END;
   
+
 
 
 --EXCEPTIONS
 
 
+--PROCEDURES AND FUNCTIONS
+CREATE OR REPLACE PROCEDURE raise_salary
+(
+  employee_ssn  IN CHAR,
+  employee_pct  IN NUMBER DEFAULT 5,
+  result_message OUT CHAR
+)
+
+AS
+
+  old_salary      employee.salary%TYPE;
+  increase_amount NUMBER;
+  
+  pct_too_high    EXCEPTION;
+  update_error    EXCEPTION;
+
+BEGIN
+  IF employee_pct > 50 THEN
+    RAISE pct_too_high;
+  END IF;
+  
+  SELECT salary
+  INTO old_salary
+  FROM employee
+  WHERE ssn = employee_ssn;
+  
+  IF(old_salary IS NOT NULL) AND (old_salary > 0) THEN
+    increase_amount := employee_pct / 100;
+    
+  UPDATE employee
+  SET salary = salary + (salary * increase_amount)
+  WHERE ssn = employee_ssn;
+  
+  IF SQL%ROWCOUNT <> 1 THEN
+    RAISE update_error;
+  END IF;
+  
+  ELSE
+  
+    result_message := 'Current salary is either NULL or 0';
+  END IF;
+  
+  WHEN pct_too_high THEN
+    result_message := 'Raise percentage may not exceed 50%';
+    
+  WHEN NO_DATA_FOUND THEN
+    result_message := 'Employee ' || employee_ssn || ' not found';
+    
+  WHEN update_error THEN
+    result_message := 'Database error';
+    
+  WHEN OTHERS THEN
+    result_message := 'Unknown error';
+    
+END raise_salary;
 
 
+
+--FUNCTION
+CREATE OR REPLACE FUNCTION salary_valid
+(
+ input_ssn  IN CHAR,
+ input_salary IN NUMBER
+)
+RETURN BOOLEAN
+IS
+  count_mgmt    NUMBER,
+  salary_limit  NUMBER
+  
+BEGIN
+  IF input_salary > salary_limit THEN
+    RETURN (FALSE);
+  ELSE
+    RETURN (TRUE);
+  END IF;
+END salary_valid;
 
 
 

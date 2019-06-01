@@ -66,3 +66,17 @@ EXCEPTIONS
 	-STORAGE_ERROR
 	-TIMEOUT_ON_RESOURCE
 
+
+--DIFFERENCE BETWEEN A PROCEDURE AND A FUNCTION
+	A function returns a value where as a procedure doesn't return anything.
+	Procedures are used to perform a task
+	A function is generally used to fetch or return some desired value.
+
+--PARAMETERS
+	-Parameters data types must be unconstrained. This means that we don't use for example NUMBER(6) or VARCHAR(10),
+	 we use VARCHAR or NUMBER. This is because we don't know the length of the parameter we're going to pass.
+	-We can also use %TYPE or %ROWTYPE notation.
+
+
+
+

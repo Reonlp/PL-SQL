@@ -54,3 +54,63 @@ BEGIN
 END;
 
 EXECUTE salarioMasAlto;
+
+
+--Codifica un programa que visualice los dos empleados que ganan menos de cada oficio
+CREATE OR REPLACE PROCEDURE menosPorOficio
+IS
+  CURSOR salarioMenor IS
+    SELECT OFICIO, APELLIDO, SALARIO
+    FROM EMPLE
+    ORDER BY OFICIO, SALARIO ASC;
+  
+  oficio_temp VARCHAR2(30) := 'TEMPORAL';
+  contador NUMBER(3) := 0;
+
+BEGIN
+  FOR porSalario IN salarioMenor LOOP
+    IF oficio_temp <> porSalario.OFICIO THEN
+     DBMS_OUTPUT.PUT_LINE('OFICIO: ' || porSalario.OFICIO || ' APELLIDO: ' || porSalario.APELLIDO || ' SALARIO: ' || porSalario.SALARIO);
+     CONTADOR := 0;
+    ELSIF oficio_temp = porSalario.OFICIO AND CONTADOR = 1 THEN
+      DBMS_OUTPUT.PUT_LINE('OFICIO: ' || porSalario.OFICIO || ' APELLIDO: ' || porSalario.APELLIDO || ' SALARIO: ' || porSalario.SALARIO);
+
+    END IF;
+    CONTADOR := CONTADOR + 1;
+    oficio_temp := porSalario.OFICIO;
+  END LOOP;
+END;
+  
+EXECUTE menosPorOficio;
+
+--Desarrolla un procedimiento que permita insertar nuevos departamentos.
+  --Se pasará como parámetro el nombre del departamento y la localidad
+  --El procedimiento insertará la fila asignando como numero de departamento la decena siguiente al mayor de la tabla
+  --Gestión de errores
+
+CREATE OR REPLACE PROCEDURE insertDepart(nombreDep DEPART.DNOMBRE%TYPE, localidad DEPART.LOC%TYPE)
+  IS
+    CURSOR departamentosCursor IS
+      SELECT * FROM DEPART;
+    
+    numeroDepartamento DEPART.DEPT_NO%TYPE := 0;
+BEGIN
+  FOR dep IN departamentosCursor LOOP
+    IF numeroDepartamento < dep.DEPT_NO THEN
+      numeroDepartamento := dep.DEPT_NO;
+    END IF;
+  END LOOP;
+  numeroDepartamento := numeroDepartamento + 10;
+  INSERT INTO DEPART (DEPT_NO, DNOMBRE, LOC) VALUES (numeroDepartamento, nombreDep, localidad);
+  
+END;
+    
+EXECUTE insertDepart('RR.HH.', 'SEVILLA');
+  
+  
+  
+  
+  
+  
+  
+  

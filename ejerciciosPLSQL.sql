@@ -106,11 +106,46 @@ BEGIN
 END;
     
 EXECUTE insertDepart('RR.HH.', 'SEVILLA');
+
+EXECUTE insertDepart('&Departamento', '&Localidad');
+
+
+--Codifica un procedimiento que reciba como parámetros un número de departamento, un importe y un porcentaje; y que suba el salario
+--a todos los empleados del departamento indicado en la llamada. La subida será el porcentaje o el importe que se indica en la llamada
+--(el que sea más beneficioso en cada caso)
+CREATE OR REPLACE PROCEDURE subidaSueldo(numeroDep EMPLEADOS.DEP_NO%TYPE, porcentaje NUMBER, importe NUMBER)
+IS
+  CURSOR empleadosCursor IS
+    SELECT * FROM EMPLEADOS
+    WHERE DEP_NO = numeroDep
+    FOR UPDATE OF SALARIO;
   
-  
-  
-  
-  
-  
-  
+  aumentoPorcentaje  NUMBER(10) := 0;
+  aumentoImporte    NUMBER(10) := 0;
+BEGIN
+  FOR empleTemp IN empleadosCursor LOOP
+
+    
+    aumentoPorcentaje := empleTemp.SALARIO * ((100 + porcentaje) /100);
+    aumentoImporte := empleTemp.SALARIO + importe;
+    
+    IF(aumentoPorcentaje > aumentoImporte) THEN 
+      UPDATE EMPLEADOS SET SALARIO = aumentoPorcentaje WHERE CURRENT OF empleadosCursor;
+      DBMS_OUTPUT.PUT_LINE(empleTemp.APELLIDO || ' su salario ha sido aumentado por porcentaje');
+    ELSIF (aumentoImporte > aumentoPorcentaje) THEN 
+      UPDATE EMPLEADOS SET SALARIO = aumentoImporte WHERE CURRENT OF empleadosCursor;
+      DBMS_OUTPUT.PUT_LINE(empleTemp.APELLIDO || ' su salario ha sido aumentado por importe');
+    END IF;
+      DBMS_OUTPUT.PUT_LINE(aumentoPorcentaje || '   '  || aumentoImporte);
+      aumentoPorcentaje := 0;
+      aumentoImporte := 0;
+  END LOOP;
+END;
+
+UPDATE EMPLEADOS SET SALARIO = SALARIO - 3000 WHERE APELLIDO = 'REY';
+
+EXECUTE subidaSueldo(10, 10, 200);
+
+
+
   

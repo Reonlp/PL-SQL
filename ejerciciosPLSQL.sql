@@ -146,6 +146,137 @@ UPDATE EMPLEADOS SET SALARIO = SALARIO - 3000 WHERE APELLIDO = 'REY';
 
 EXECUTE subidaSueldo(10, 10, 200);
 
+--Escribe un procedimiento que suba el sueldo de todos los empleados que ganen menos que el salario medio de su oficio.
+--La subida será del 50 por 100 de la dferencia entre el salaro del empleado y la media de su oficio.
+--Se deberá hacer que la transacción no se quede a medias y se gestionarán los posibles errores.
+
+CREATE OR REPLACE PROCEDURE subidaSalarioPorOficio
+  IS
+    CURSOR salariosMedios IS
+      SELECT OFICIO, TRUNC(AVG(SALARIO), 2) AS SALARIOMEDIO
+      FROM EMPLE
+      GROUP BY OFICIO;
+      
+    CURSOR empleados IS
+      SELECT * FROM EMPLE
+      FOR UPDATE OF SALARIO;
+      
+      temporalSalario EMPLE.SALARIO%TYPE := 0;
+BEGIN
+  FOR emp IN empleados LOOP
+    FOR sal in salariosMedios LOOP
+      IF(sal.OFICIO = emp.OFICIO AND emp.SALARIO < sal.SALARIOMEDIO) THEN
+        temporalSalario := (sal.SALARIOMEDIO - emp.SALARIO) * 0.5;
+        DBMS_OUTPUT.PUT_LINE('Se le ha subido el salario a ' || emp.APELLIDO);
+         UPDATE EMPLE SET SALARIO = (SALARIO + temporalSalario) WHERE CURRENT OF empleados;
+      END IF;
+      temporalSalario := 0;
+    END LOOP;
+  END LOOP;
+END;
+
+EXECUTE subidaSalarioPorOficio;
 
 
+--EXAMPLE OF A FUNCTION
+CREATE OR REPLACE FUNCTION enconrarEmpleado(v_apellido VARCHAR2)
+  RETURN REAL
+AS
+  N_EMPLEADO emple.emp_no%TYPE;
+BEGIN
+  SELECT emp_no INTO N_EMPLEADO FROM EMPLE WHERE APELLIDO = v_apellido;
+  RETURN N_EMPLEADO;
+END;
+
+DECLARE
+  num EMPLE.EMP_NO%TYPE;
+BEGIN
+ num := enconrarEmpleado('SÁNCHEZ');
+ DBMS_OUTPUT.PUT_LINE(num);
+END;
+
+--TRIGGERS
+CREATE TABLE audit_entry (
+  entry_date DATE,
+  entry_user VARCHAR2(30),
+  entry_text VARCHAR2(2000),
+  old_value VARCHAR2(2000),
+  new_value VARCHAR2(2000));
   
+CREATE OR REPLACE TRIGGER employee_journal
+  AFTER INSERT OR UPDATE OF salary ON employee
+  FOR EACH ROW
+  WHEN (new.salary > 70000)
+BEGIN
+  INSERT INTO audit_entry
+    (entry_date, entry_user, entry_text, old_value, new_value)
+  VALUES
+    (SYSDATE, USER, 'Salary > 7000 for ' || :NEW.ssn, :OLD.salary, :new.salary);
+END;
+
+UPDATE employee SET salary = salary * 1.5 WHERE lname = 'Borg';
+
+
+CREATE TABLE budget_request (
+  account_no VARCHAR2(3),
+  amount  NUMBER(6),
+  description VARCHAR2(2000),
+  date_entered DATE default SYSDATE);
+  
+CREATE OR REPLACE TRIGGER budget_event
+  AFTER INSERT OR UPDATE OF salary ON employee
+  FOR EACH ROW
+
+BEGIN
+  IF UPDATING
+  AND :NEW.salary > :OLD.salary THEN
+    INSERT INTO budget_request(account_no, amount, description)
+      VALUES(101, :NEW.salary - :OLD.salary, 'Employee raise');
+  ELSE
+    INSERT INTO budget_request(account_no, amount, description)
+      VALUES(101, :NEW.salary, 'New employee');
+  END IF;
+END;
+
+/*Escribe un trigger que permita auditar las modificaciones en la tabla EMPLEADOS, 
+insertando los siguientes datos en la tabla auditaremple: fecha y hora, número de empleado, apellido, 
+la operación de actualización MODIFICACIÓN y el valor anterior y el valor nuevo de cada columna modificada (sólo en las columnas modificadas) */
+CREATE TABLE auditarEmpleCasa (
+  logInfo VARCHAR2(2000));
+
+CREATE OR REPLACE TRIGGER modificacionesEmpleados
+  AFTER INSERT OR DELETE OR UPDATE ON EMPLEADOS
+  FOR EACH ROW
+
+DECLARE
+  operacionRealizada VARCHAR2(100) := 'Operacion';
+  
+BEGIN
+  IF UPDATING ('EMP_NO') THEN
+    operacionRealizada := 'Actualizacion ' || sysdate || ' * ' || :OLD.EMP_NO || ' * ' || ' * ' || :NEW.EMP_NO;
+  ELSIF UPDATING ('SALARIO') THEN
+    operacionRealizada := 'Actualizacion ' || sysdate || ' * ' || :OLD.SALARIO || ' * ' || :NEW.SALARIO;
+  ELSIF DELETING THEN
+    operacionRealizada := 'Borrado';
+  END IF;
+  
+  INSERT INTO AUDITAREMPLECASA (logInfo) VALUES (operacionRealizada);
+END;
+
+UPDATE EMPLEADOS SET SALARIO = SALARIO + 3000 WHERE APELLIDO = 'GARRIDO';
+
+
+
+/* Escribir un disparador de base de datos que haga fallar cualquier 
+operación de modificación del apellido o del número de un empleado, o que suponga una subida de sueldo superior al 10%. */
+CREATE OR REPLACE TRIGGER operacionesNoPermitidas
+  AFTER UPDATE OF APELLIDO, SALARIO ON EMPLE
+  FOR EACH ROW
+  
+BEGIN
+  IF UPDATING ('APELLIDO') OR UPDATING ('SALARIO') AND :NEW.SALARIO < :OLD.SALARIO *1.1 THEN
+    RAISE_APPLICATION_ERROR (-20001, ('Modificación no permitida'));
+  END IF;
+END;
+
+UPDATE EMPLE SET SALARIO = SALARIO * 1.01 WHERE APELLIDO = 'GARRIDO';

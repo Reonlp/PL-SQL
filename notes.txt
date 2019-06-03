@@ -78,5 +78,14 @@ EXCEPTIONS
 	-We can also use %TYPE or %ROWTYPE notation.
 
 
+--Triggers: Is a PLSQL program stored within the database. Very similar to a stored procedured, but are unique because
+	    of they fire as the result of a database event.
+
+	*STATEMENT LEVEL TRIGGERS:
+
+	*ROW LEVEL TRIGGERS: This trigger fires once for each row within a trigger statement. It is indicated by the
+			     	FOR EACH ROW clause.
+
+
 
 
